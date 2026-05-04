@@ -25,10 +25,10 @@ class BookingRequestMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: "emails.booking-request",
+            view: 'emails.booking-request',
             with: [
-                "booking" => $this->booking,
-                "product" => $this->booking->product,
+                'booking' => $this->booking,
+                'product' => $this->booking->product,
             ],
         );
     }

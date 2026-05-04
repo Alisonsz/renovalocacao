@@ -43,7 +43,12 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'routeName'   => Route::currentRouteName(),
+            'routeName' => Route::currentRouteName(),
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'bookingReference' => fn () => $request->session()->get('booking_reference'),
+            ],
         ];
     }
 }

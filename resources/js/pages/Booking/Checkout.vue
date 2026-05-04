@@ -16,7 +16,14 @@ type Product = {
 const props = defineProps<{
     product: Product;
     settings: Record<string, string>;
+    blockedRanges: Array<{
+        start_date: string;
+        end_date: string;
+    }>;
 }>();
+
+const route = (name: string, params?: unknown) =>
+    (globalThis as unknown as { route: (routeName: string, routeParams?: unknown) => string }).route(name, params);
 
 const scrolled = ref(false);
 function onScroll() { scrolled.value = window.scrollY > 50; }
@@ -37,13 +44,62 @@ const form = useForm({
     customer_email: '',
     customer_phone: '',
     customer_company: '',
+    customer_zip_code: '',
     customer_city: '',
+    customer_street: '',
+    customer_number: '',
+    customer_reference: '',
     start_date: '',
     end_date: '',
     message: '',
 });
 
+function overlaps(startA: string, endA: string, startB: string, endB: string): boolean {
+    return startA <= endB && endA >= startB;
+}
+
+const selectedDateConflict = computed(() => {
+    if (!form.start_date || !form.end_date) {
+        return false;
+    }
+
+    return props.blockedRanges.some((range) => overlaps(
+        form.start_date,
+        form.end_date,
+        range.start_date,
+        range.end_date,
+    ));
+});
+
+const conflictRangeLabel = computed(() => {
+    if (!form.start_date || !form.end_date) {
+        return null;
+    }
+
+    const conflict = props.blockedRanges.find((range) => overlaps(
+        form.start_date,
+        form.end_date,
+        range.start_date,
+        range.end_date,
+    ));
+
+    if (!conflict) {
+        return null;
+    }
+
+    return `${formatDate(conflict.start_date)} até ${formatDate(conflict.end_date)}`;
+});
+
+function formatDate(date: string): string {
+    return new Date(`${date}T00:00:00`).toLocaleDateString('pt-BR');
+}
+
 function submit() {
+    if (selectedDateConflict.value) {
+        form.setError('start_date', 'Este período conflita com uma reserva já confirmada. Escolha outra data.');
+        return;
+    }
+
     form.post(route('booking.store'));
 }
 
@@ -51,11 +107,28 @@ function submit() {
 function maskPhone(e: Event) {
     const target = e.target as HTMLInputElement;
     let v = target.value.replace(/\D/g, '');
+    v = v.slice(0, 11);
     if (v.length <= 11) {
         v = v.replace(/^(\d{2})(\d)/g,'($1) $2');
         v = v.replace(/(\d)(\d{4})$/,'$1-$2');
     }
     form.customer_phone = v;
+}
+
+function maskZipCode(e: Event) {
+    const target = e.target as HTMLInputElement;
+    let value = target.value.replace(/\D/g, '').slice(0, 8);
+
+    if (value.length > 5) {
+        value = `${value.slice(0, 5)}-${value.slice(5)}`;
+    }
+
+    form.customer_zip_code = value;
+}
+
+function normalizeAddressNumber(e: Event) {
+    const target = e.target as HTMLInputElement;
+    form.customer_number = target.value.replace(/[^0-9A-Za-z\-\/ ]/g, '').slice(0, 10);
 }
 </script>
 
@@ -66,7 +139,7 @@ function maskPhone(e: Event) {
         <meta name="robots" content="noindex" />
     </Head>
 
-    <div class="min-h-screen bg-[#F8FAFC] font-sans antialiased">
+    <div class="booking-page min-h-screen bg-[#F8FAFC] font-sans antialiased">
         <!-- Navbar -->
         <header :class="['fixed top-0 inset-x-0 z-50 transition-all duration-300', scrolled ? 'bg-white/95 backdrop-blur-sm shadow-sm py-3' : 'bg-white shadow-sm py-4']">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
@@ -164,17 +237,85 @@ function maskPhone(e: Event) {
                                         class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition bg-white"
                                     />
                                 </div>
+                            </div>
+
+                            <h2 class="text-base font-semibold text-[#0F172A] flex items-center gap-2 mb-5">
+                                <MapPin :size="17" class="text-[#3B82F6]" />
+                                Endereço para Entrega/Retirada
+                            </h2>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                                        <MapPin :size="13" class="inline mr-1 text-slate-400" />
-                                        Cidade <span class="text-slate-400 text-xs">(opcional)</span>
+                                        CEP <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        v-model="form.customer_zip_code"
+                                        type="text"
+                                        inputmode="numeric"
+                                        maxlength="9"
+                                        placeholder="00000-000"
+                                        :class="['w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition', form.errors.customer_zip_code ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-white']"
+                                        required
+                                        @input="maskZipCode"
+                                    />
+                                    <p v-if="form.errors.customer_zip_code" class="text-red-500 text-xs mt-1">{{ form.errors.customer_zip_code }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                                        Cidade <span class="text-red-500">*</span>
                                     </label>
                                     <input
                                         v-model="form.customer_city"
                                         type="text"
+                                        maxlength="255"
                                         placeholder="Sua cidade"
-                                        class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition bg-white"
+                                        :class="['w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition', form.errors.customer_city ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-white']"
+                                        required
                                     />
+                                    <p v-if="form.errors.customer_city" class="text-red-500 text-xs mt-1">{{ form.errors.customer_city }}</p>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                                        Rua <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        v-model="form.customer_street"
+                                        type="text"
+                                        maxlength="255"
+                                        placeholder="Rua, avenida ou travessa"
+                                        :class="['w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition', form.errors.customer_street ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-white']"
+                                        required
+                                    />
+                                    <p v-if="form.errors.customer_street" class="text-red-500 text-xs mt-1">{{ form.errors.customer_street }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                                        Número <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        v-model="form.customer_number"
+                                        type="text"
+                                        maxlength="10"
+                                        placeholder="123 ou S/N"
+                                        :class="['w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition', form.errors.customer_number ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-white']"
+                                        required
+                                        @input="normalizeAddressNumber"
+                                    />
+                                    <p v-if="form.errors.customer_number" class="text-red-500 text-xs mt-1">{{ form.errors.customer_number }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                                        Ponto de referência <span class="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        v-model="form.customer_reference"
+                                        type="text"
+                                        maxlength="255"
+                                        placeholder="Ex.: próximo à praça central"
+                                        :class="['w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition', form.errors.customer_reference ? 'border-red-400 bg-red-50' : 'border-slate-200 bg-white']"
+                                        required
+                                    />
+                                    <p v-if="form.errors.customer_reference" class="text-red-500 text-xs mt-1">{{ form.errors.customer_reference }}</p>
                                 </div>
                             </div>
 
@@ -186,6 +327,14 @@ function maskPhone(e: Event) {
                             <p class="text-xs text-slate-400 mb-3">
                                 Informe o período desejado — confirmaremos a disponibilidade real em até 24h.
                             </p>
+                            <div v-if="blockedRanges.length" class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                                <p class="text-xs font-semibold text-amber-800 mb-1">Períodos já confirmados (indisponíveis):</p>
+                                <p class="text-xs text-amber-700 leading-relaxed">
+                                    <span v-for="(range, index) in blockedRanges" :key="`${range.start_date}-${range.end_date}`">
+                                        {{ formatDate(range.start_date) }} até {{ formatDate(range.end_date) }}<span v-if="index < blockedRanges.length - 1">, </span>
+                                    </span>
+                                </p>
+                            </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Data de início <span class="text-red-500">*</span></label>
@@ -210,6 +359,9 @@ function maskPhone(e: Event) {
                                     <p v-if="form.errors.end_date" class="text-red-500 text-xs mt-1">{{ form.errors.end_date }}</p>
                                 </div>
                             </div>
+                            <div v-if="selectedDateConflict" class="mb-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                Esse período está indisponível. Conflito com reserva confirmada em {{ conflictRangeLabel }}.
+                            </div>
 
                             <!-- Message -->
                             <h2 class="text-base font-semibold text-[#0F172A] flex items-center gap-2 mb-4">
@@ -219,6 +371,7 @@ function maskPhone(e: Event) {
                             <textarea
                                 v-model="form.message"
                                 rows="4"
+                                maxlength="1000"
                                 placeholder="Descreva seu interesse, local de uso, dúvidas técnicas..."
                                 class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B82F6] transition bg-white resize-none mb-7"
                             ></textarea>

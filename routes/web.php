@@ -12,7 +12,6 @@ use App\Http\Controllers\GoogleMerchantController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Features;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -25,7 +24,7 @@ Route::get('/reserva-confirmada', [BookingController::class, 'success'])->name('
 Route::get('/google-merchant.xml', [GoogleMerchantController::class, 'feed'])->name('google-merchant');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+    Route::redirect('dashboard', '/admin')->name('dashboard');
 
     // Admin panel
     Route::prefix('admin')->name('admin.')->group(function () {

@@ -27,7 +27,7 @@ function isActive(route: string): boolean {
 </script>
 
 <template>
-    <div class="flex h-screen bg-slate-50 font-sans overflow-hidden">
+    <div class="admin-panel flex h-screen bg-slate-50 font-sans overflow-hidden">
         <!-- Sidebar Overlay (mobile) -->
         <div
             v-if="sidebarOpen"

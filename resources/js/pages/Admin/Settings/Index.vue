@@ -26,8 +26,7 @@ Object.values(props.settings).flat().forEach(s => {
 
 const form = useForm({ settings: settingsMap });
 
-const openGroups = ref<Record<string, boolean>>({
-    general: true,
+const openGroups = ref<Record<string, boolean>>({    general: true,
     contact: true,
     email: true,
     seo: false,

@@ -171,3 +171,47 @@
         @apply bg-background text-foreground;
     }
 }
+
+@layer components {
+    .admin-panel label {
+        @apply text-slate-700;
+    }
+
+    .admin-panel input:not([type='checkbox']):not([type='radio']),
+    .admin-panel select,
+    .admin-panel textarea {
+        @apply bg-white text-slate-900 placeholder:text-slate-400;
+        color-scheme: light;
+    }
+
+    .admin-panel input:-webkit-autofill,
+    .admin-panel input:-webkit-autofill:hover,
+    .admin-panel input:-webkit-autofill:focus,
+    .admin-panel textarea:-webkit-autofill,
+    .admin-panel select:-webkit-autofill {
+        -webkit-text-fill-color: #0f172a;
+        -webkit-box-shadow: 0 0 0px 1000px #ffffff inset;
+        transition: background-color 9999s ease-in-out 0s;
+    }
+
+    .booking-page label {
+        @apply text-slate-700;
+    }
+
+    .booking-page input:not([type='checkbox']):not([type='radio']),
+    .booking-page select,
+    .booking-page textarea {
+        @apply text-slate-900 placeholder:text-slate-400;
+        color-scheme: light;
+    }
+
+    .booking-page input:-webkit-autofill,
+    .booking-page input:-webkit-autofill:hover,
+    .booking-page input:-webkit-autofill:focus,
+    .booking-page textarea:-webkit-autofill,
+    .booking-page select:-webkit-autofill {
+        -webkit-text-fill-color: #0f172a;
+        -webkit-box-shadow: 0 0 0px 1000px #ffffff inset;
+        transition: background-color 9999s ease-in-out 0s;
+    }
+}

@@ -31,3 +31,13 @@ declare module 'vue' {
         $headManager: ReturnType<typeof createHeadManager>;
     }
 }
+
+// Global route() helper (registered on window in app.ts)
+type RouteParam = string | number | { id: string | number };
+type RouteParams = RouteParam | Record<string, RouteParam>;
+
+declare function route(name: string, params?: RouteParams): string;
+
+interface Window {
+    route: typeof route;
+}

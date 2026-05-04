@@ -9,7 +9,11 @@ type Booking = {
     customer_name: string;
     customer_email: string;
     customer_phone: string;
+    customer_zip_code: string | null;
     customer_city: string | null;
+    customer_street: string | null;
+    customer_number: string | null;
+    customer_reference: string | null;
     product_name: string | null;
     product_id: number;
     start_date: string;
@@ -22,6 +26,9 @@ type Booking = {
 };
 
 const props = defineProps<{ bookings: Booking[] }>();
+
+const route = (name: string, params?: unknown) =>
+    (globalThis as unknown as { route: (routeName: string, routeParams?: unknown) => string }).route(name, params);
 
 const statusColors: Record<string, string> = {
     pending:   'bg-yellow-100 text-yellow-800',
@@ -161,6 +168,13 @@ const filtered = computed(() =>
                 <p class="text-sm text-slate-500 mb-4">
                     <strong>{{ selectedBooking.customer_name }}</strong> — {{ selectedBooking.product_name }}
                 </p>
+                <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+                    <p><strong>Telefone:</strong> {{ selectedBooking.customer_phone }}</p>
+                    <p><strong>CEP:</strong> {{ selectedBooking.customer_zip_code }}</p>
+                    <p><strong>Cidade:</strong> {{ selectedBooking.customer_city }}</p>
+                    <p><strong>Rua:</strong> {{ selectedBooking.customer_street }}, {{ selectedBooking.customer_number }}</p>
+                    <p><strong>Referencia:</strong> {{ selectedBooking.customer_reference }}</p>
+                </div>
                 <form @submit.prevent="updateBooking" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
