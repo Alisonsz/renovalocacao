@@ -35,6 +35,7 @@ const props = defineProps<{
 const isEditing = computed(() => !!props.product);
 
 const form = useForm({
+    _method:                'post',
     name:                    props.product?.name ?? '',
     category_id:             props.product?.category_id ?? '',
     short_description:       props.product?.short_description ?? '',
@@ -90,11 +91,12 @@ function isMarkedForDelete(id: number) {
 
 function submit() {
     if (isEditing.value) {
+        form._method = 'put';
         form.post(route('admin.products.update', props.product!.id), {
             forceFormData: true,
-            _method: 'PUT',
-        } as any);
+        });
     } else {
+        form._method = 'post';
         form.post(route('admin.products.store'), { forceFormData: true });
     }
 }

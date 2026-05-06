@@ -20,6 +20,7 @@ const props = defineProps<{
 const isEditing = computed(() => !!props.testimonial);
 
 const form = useForm({
+    _method:         'post',
     customer_name:    props.testimonial?.customer_name ?? '',
     customer_company: props.testimonial?.customer_company ?? '',
     customer_city:    props.testimonial?.customer_city ?? '',
@@ -32,11 +33,12 @@ const form = useForm({
 
 function submit() {
     if (isEditing.value) {
+        form._method = 'put';
         form.post(route('admin.testimonials.update', props.testimonial!.id), {
             forceFormData: true,
-            _method: 'PUT',
-        } as any);
+        });
     } else {
+        form._method = 'post';
         form.post(route('admin.testimonials.store'), { forceFormData: true });
     }
 }

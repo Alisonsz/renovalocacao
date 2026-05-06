@@ -26,10 +26,9 @@ const form = useForm({
 
 function submit() {
     if (isEditing.value) {
-        form.post(route('admin.categories.update', props.category!.id), {
+        form.put(route('admin.categories.update', props.category!.id), {
             forceFormData: true,
-            _method: 'PUT',
-        } as any);
+        });
     } else {
         form.post(route('admin.categories.store'), { forceFormData: true });
     }
